@@ -1,108 +1,64 @@
 # HMDroidbot 架构图
 
-本文档基于当前源码梳理 HMDroidbot 的主流程、模块边界和外部依赖。HMDroidbot 是一个 Python 实现的 HarmonyOS / Android UI 自动探索与测试输入生成器，核心模型是“命令行配置 -> DroidBot 调度 -> 输入策略生成事件 -> 设备适配层执行 -> 输出 UTG 和报告”。
-
-配套中文演讲稿见 [architecture_speech.md](architecture_speech.md)。
+HMDroidbot 是一个 Python 实现的 HarmonyOS / Android UI 自动探索与测试输入生成器，核心模型是“命令行配置 -> DroidBot 调度 -> 输入策略生成事件 -> 设备适配层执行 -> 输出 UTG 和报告”。
 
 ## 总览架构
 
 ```mermaid
 flowchart TB
-    subgraph CLI["入口与配置"]
-        Console["droidbot 命令\nsetup.py console_scripts"]
-        Module["python -m droidbot.start\n或 droidbot/start.py"]
-        RootStart["start.py\n直接脚本入口"]
-        Config["config.yml\nutils 加载默认配置"]
+    subgraph Entry["入口与配置"]
+        CLI["droidbot / python -m droidbot.start\nconfig.yml"]
     end
 
-    subgraph Core["核心调度层"]
-        Start["droidbot.start\nparse_args/main"]
-        DroidBot["DroidBot\n单机调度器"]
-        DroidMaster["DroidMaster\n分布式/QEMU 调度器"]
-        Env["AppEnvManager\n测试环境管理"]
-        InputManager["InputManager\n事件循环管理"]
+    subgraph Orchestration["调度层"]
+        Start["droidbot.start\n解析参数并选择模式"]
+        DroidBot["DroidBot\n单机生命周期调度"]
+        DroidMaster["DroidMaster\n分布式/QEMU 调度"]
     end
 
-    subgraph Model["领域模型"]
-        App["App\nAPK 元数据/Intent"]
-        AppHM["AppHM\nHAP/Bundle 元数据"]
-        Device["Device\nAndroid 设备抽象"]
-        DeviceHM["DeviceHM\nHarmonyOS 设备抽象"]
-        Policy["InputPolicy\nRandom/DFS/BFS/Replay/Manual/Memory"]
-        State["DeviceState\n界面状态与可触发事件"]
-        Event["InputEvent/EventLog\n输入事件与执行日志"]
-        UTG["UTG\nnetworkx UI 转移图"]
+    subgraph Runtime["核心运行时"]
+        AppModel["App / AppHM\n应用元数据"]
+        DeviceModel["Device / DeviceHM\n设备抽象"]
+        EnvManager["AppEnvManager\n环境部署"]
+        InputLoop["InputManager\n事件循环"]
+        Policy["InputPolicy\n事件生成策略"]
+        StateGraph["DeviceState + UTG\n状态采集与转移图"]
     end
 
-    subgraph Adapter["设备适配层"]
-        ADB["ADB"]
-        HDC["HDC"]
-        DroidbotApp["DroidBotAppConn\n伴随 APK/无障碍"]
-        Minicap["Minicap\n截图"]
-        Log["Logcat/Hilog\n设备日志"]
-        Telnet["TelnetConsole\n模拟器控制"]
-        Process["ProcessMonitor/UserInputMonitor/IME"]
-        QEMUConn["QEMUConn"]
-        WorkerConn["DroidBotConn\nWorker 子进程"]
+    subgraph IO["平台适配层"]
+        AndroidIO["Android adapters\nADB / Companion / Minicap / Logcat"]
+        HarmonyIO["HarmonyOS adapters\nHDC / Hilog"]
+        DistributedIO["Distributed adapters\nQEMUConn / DroidBotConn"]
     end
 
-    subgraph External["外部工具与服务"]
-        Androguard["Androguard\nAPK 解析"]
-        HostADB["adb/monkey"]
-        HostHDC["hdc"]
-        QEMU["QEMU/qemu-img"]
-        Humanoid["Humanoid XML-RPC\n可选事件排序"]
-        Frida["Frida Monitor\n可选敏感 API 监控"]
+    subgraph External["外部运行环境"]
+        AndroidDevice["Android 设备\nAPK / adb / 无障碍"]
+        HarmonyDevice["HarmonyOS 设备\nHAP / hdc / Ability"]
+        OptionalServices["可选服务\nHumanoid / Frida"]
+        Output["output_dir\nHTML / UTG / 截图 / 日志"]
     end
 
-    subgraph DeviceRuntime["设备运行时"]
-        TargetApp["被测应用\nAPK/HAP"]
-        Companion["DroidBot Companion APK\nAndroid 无障碍服务"]
-        OSLogs["系统日志/页面/Ability/Activity"]
-    end
-
-    Console --> Start
-    Module --> Start
-    RootStart --> DroidBot
-    Config --> Start
+    CLI --> Start
     Start --> DroidBot
     Start --> DroidMaster
-    DroidBot --> Device
-    DroidBot --> DeviceHM
-    DroidBot --> App
-    DroidBot --> AppHM
-    DroidBot --> Env
-    DroidBot --> InputManager
-    InputManager --> Policy
-    InputManager --> Event
-    Policy --> State
-    Policy --> UTG
-    Policy --> Event
-    Event --> Device
-    Event --> DeviceHM
-    App --> Androguard
-    Device --> ADB
-    Device --> DroidbotApp
-    Device --> Minicap
-    Device --> Log
-    Device --> Telnet
-    Device --> Process
-    DeviceHM --> HDC
-    DeviceHM --> Log
-    ADB --> HostADB
-    HDC --> HostHDC
-    HostADB --> TargetApp
-    HostHDC --> TargetApp
-    DroidbotApp --> Companion
-    Log --> OSLogs
-    Minicap --> OSLogs
-    DroidMaster --> QEMUConn
-    DroidMaster --> WorkerConn
-    QEMUConn --> QEMU
-    WorkerConn --> DroidBot
-    Policy -. 可选 .-> Humanoid
-    State -. 可选 .-> Humanoid
-    DroidBot -. 可选 .-> Frida
+    DroidBot --> AppModel
+    DroidBot --> DeviceModel
+    DroidBot --> EnvManager
+    DroidBot --> InputLoop
+    InputLoop --> Policy
+    Policy --> StateGraph
+    StateGraph --> InputLoop
+    InputLoop --> DeviceModel
+    DeviceModel --> AndroidIO
+    DeviceModel --> HarmonyIO
+    DroidMaster --> DistributedIO
+    DistributedIO --> DroidBot
+    AndroidIO --> AndroidDevice
+    HarmonyIO --> HarmonyDevice
+    Policy -.-> OptionalServices
+    DeviceModel -.-> OptionalServices
+    DroidBot --> Output
+    StateGraph --> Output
 ```
 
 ## 单机运行时序
