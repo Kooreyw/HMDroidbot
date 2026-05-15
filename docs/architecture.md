@@ -2,6 +2,8 @@
 
 本文档基于当前源码梳理 HMDroidbot 的主流程、模块边界和外部依赖。HMDroidbot 是一个 Python 实现的 HarmonyOS / Android UI 自动探索与测试输入生成器，核心模型是“命令行配置 -> DroidBot 调度 -> 输入策略生成事件 -> 设备适配层执行 -> 输出 UTG 和报告”。
 
+配套中文演讲稿见 [architecture_speech.md](architecture_speech.md)。
+
 ## 总览架构
 
 ```mermaid
