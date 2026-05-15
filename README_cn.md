@@ -2,6 +2,10 @@
 HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测试输入生成器，适用于HarmonyOS（兼容Android）。它是从[Droidbot](https://github.com/honeynet/droidbot) fork出来的，支持HarmonyOS NEXT设备。
 它可以发送随机或脚本化的输入事件来测试HarmonyOS应用程序，更快地实现更高的代码覆盖率，并在测试后生成一个UI跳转关系图（UTG）。
 
+## 架构图
+
+源码级架构图和运行流程请查看 [docs/architecture.md](docs/architecture.md)。
+
 ## :smiling_face_with_three_hearts: 功能特性
 :boom: 现已支持HarmonyOS的覆盖率报告！包括ability、pages等以及一些HarmonyOS特定的指标！请参见下面的示例报告！
 
