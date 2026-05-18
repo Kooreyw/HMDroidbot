@@ -65,8 +65,9 @@ class Minicap(Adapter):
 
         if device is not None:
             # install minicap
-            import pkg_resources
-            local_minicap_path = pkg_resources.resource_filename("droidbot", "resources/minicap")
+            from ..utils import package_resource_path
+
+            local_minicap_path = package_resource_path("droidbot", "resources/minicap")
             try:
                 device.adb.shell("mkdir %s" % self.remote_minicap_path)
             except Exception:

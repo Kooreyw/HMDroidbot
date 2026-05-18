@@ -160,8 +160,9 @@ class DummyFilesEnv(StaticAppEnv):
         :param: dummy_files_dir: directory to dummy files
         """
         if dummy_files_dir is None:
-            import pkg_resources
-            dummy_files_dir = pkg_resources.resource_filename("droidbot", "resources/dummy_documents")
+            from .utils import package_resource_path
+
+            dummy_files_dir = package_resource_path("droidbot", "resources/dummy_documents")
 
         self.dummy_files_dir = dummy_files_dir
         self.env_type = "dummy_files"

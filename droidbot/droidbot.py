@@ -5,7 +5,6 @@
 import logging
 import os
 import sys
-import pkg_resources
 import shutil
 from threading import Timer
 
@@ -17,6 +16,7 @@ from .input_manager import InputManager
 # device and app class for harmonyOS
 from .device_hm import DeviceHM
 from .app_hm import AppHM
+from .utils import package_resource_path
 import typing
 import coloredlogs
 
@@ -70,8 +70,8 @@ class DroidBot(object):
         if output_dir is not None:
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
-            html_index_path = pkg_resources.resource_filename("droidbot", "resources/index.html")
-            stylesheets_path = pkg_resources.resource_filename("droidbot", "resources/stylesheets")
+            html_index_path = package_resource_path("droidbot", "resources/index.html")
+            stylesheets_path = package_resource_path("droidbot", "resources/stylesheets")
             target_stylesheets_dir = os.path.join(output_dir, "stylesheets")
             if os.path.exists(target_stylesheets_dir):
                 shutil.rmtree(target_stylesheets_dir)

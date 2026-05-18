@@ -1,14 +1,13 @@
 # HMDroidbot 架构演讲稿
 
-本文是一份基于 `docs/architecture.md` 的中文演讲稿，适合配合架构图进行 8 到 10 分钟的技术分享。讲述重点是 HMDroidbot 如何从命令行配置出发，完成设备连接、应用解析、输入生成、事件执行和报告输出。
 
 ## 开场
 
-大家好，今天我介绍 HMDroidbot 的源码架构。
+大家好，今天我介绍 HMDroidbot 的UI测试架构。
 
-HMDroidbot 是一个面向 HarmonyOS 和 Android 的轻量级 UI 自动探索与测试输入生成器。它的目标不是简单地随机点击界面，而是在测试过程中持续观察应用状态，选择下一步输入事件，并把界面状态之间的跳转关系沉淀为 UTG，也就是 UI Transition Graph。
+HMDroidbot 是一个面向 HarmonyOS 和 Android 的轻量级 UI **自动探索**与**测试输入**生成器。它的目标不是简单地随机点击界面，而是在测试过程中持续观察应用状态，选择下一步输入事件，并把界面状态之间的跳转关系沉淀为 UTG，也就是 UI Transition Graph。
 
-从整体上看，这个项目的核心链路可以概括成一句话：命令行和配置文件提供运行参数，`DroidBot` 负责统一调度，输入策略生成测试事件，设备适配层把事件发送到 Android 或 HarmonyOS 设备，最后在输出目录中生成截图、日志、状态和 UTG 报告。
+从整体上看，这个项目的核心链路可以概括成一句话：**命令行和配置文件**提供运行参数，`DroidBot` 负责统一调度，**输入策略**生成测试事件，**设备适配层**把事件发送到 Android 或 HarmonyOS 设备，最后在输出目录中生成**截图、日志、状态和 UTG 报告**。
 
 接下来我会按五个部分展开：第一是总体架构，第二是单机运行流程，第三是关键模块职责，第四是 Android 和 HarmonyOS 的平台差异，第五是分布式模式。
 
@@ -18,17 +17,17 @@ HMDroidbot 是一个面向 HarmonyOS 和 Android 的轻量级 UI 自动探索与
 
 最上面是入口与配置层。用户可以通过 `droidbot` 命令、`python -m droidbot.start`，或者直接运行脚本进入系统。`config.yml` 用来补充默认配置，例如目标系统、设备序列号、应用路径、输出目录和事件数量。
 
-第二层是核心调度层。`droidbot.start` 负责解析参数并决定启动模式。如果是普通模式，就创建 `DroidBot`；如果是分布式 master 模式，就创建 `DroidMaster`。`DroidBot` 是单机模式的核心协调器，它把设备、应用、环境管理器和输入管理器组合起来，控制完整生命周期。
+第二层是核心调度层。`droidbot.start` 负责解析参数并决定启动模式。如果是普通模式，就创建 `DroidBot`；如果是分布式 master 模式，就创建 `DroidMaster`。`DroidBot` 是单机模式的核心协调器，它把设备、应用、**环境管理器**和**输入管理器**组合起来，控制完整生命周期。分布式模式下，`DroidMaster` 会通过 `DroidBotConn` 启停 worker 子进程；每个 worker 内部仍是完整的 `DroidBot` 探索链路。
 
 第三层是领域模型层。这里包含 `App`、`AppHM`、`Device`、`DeviceHM`、`InputPolicy`、`DeviceState`、`InputEvent` 和 `UTG`。这些对象表达的是测试系统里的核心概念：被测应用是什么，设备处于什么状态，当前界面有哪些可操作控件，下一步应该执行什么事件，以及这些事件最终形成怎样的状态图。
 
-第四层是设备适配层。它把上层的抽象操作转换成具体协议调用。Android 主要依赖 ADB、DroidBot 伴随 APK、Minicap、Logcat、Telnet 和输入法相关适配器；HarmonyOS 主要依赖 HDC 和 Hilog。
+第四层是设备适配层。它把上层的抽象操作转换成具体协议调用。Android 主要依赖 ADB、DroidBot 伴随 APK、Minicap、Logcat、Telnet 和输入法相关适配器；HarmonyOS 主要依赖 HDC 和 Hilog。【分布式场景下的 `QEMUConn` 也归在这一层；`DroidBotConn` 则画在核心调度层，因为它表达的是 Master 对 worker 的调度关系，而不是对真机 UI 的协议接入。】
 
-第五层是外部工具与服务。比如 Androguard 用于 APK 解析，`adb` 和 `hdc` 用于设备通信，QEMU 用于分布式设备池，Humanoid 可以作为可选的 XML-RPC 服务给输入事件排序，Frida Monitor 可以用于敏感 API 监控。
+第五层是外部工具与服务。比如 Androguard 用于 APK 解析，`adb` 和 `hdc` 用于设备通信，QEMU 用于分布式设备池，Humanoid 可以作为可选的 XML-RPC 服务**给输入事件排序**，Frida Monitor 可以用于敏感 API 监控。
 
 最下面是设备运行时，也就是被测 APK 或 HAP、Android 伴随 APK 和系统日志、页面、Ability 或 Activity 信息。
 
-所以，这套架构的特点是：核心调度逻辑保持在 Python 进程里，具体平台能力放到适配器层，输入生成策略作为可替换策略存在，最终所有运行证据都汇聚到输出目录。
+所以，这套架构的特点是：核心调度逻辑保持在 Python 进程里，具体平台能力放到适配器层，**输入生成策略作为可替换策略存在**，最终所有运行证据都汇聚到输出目录。
 
 ## 第二部分：单机运行流程
 
@@ -40,7 +39,9 @@ HMDroidbot 是一个面向 HarmonyOS 和 Android 的轻量级 UI 自动探索与
 
 启动阶段按照比较清晰的顺序执行。第一步是设备 `set_up`，准备底层适配器；第二步是 `connect`，建立设备连接并读取必要设备信息；第三步是安装或确认被测应用；第四步是部署测试环境；第五步进入输入管理器的事件循环。
 
-事件循环是系统最关键的运行部分。`InputManager` 调用当前输入策略的 `generate_event`。策略会先从设备获取当前 `DeviceState`，也就是界面树、截图、Activity 或页面信息。然后策略把上一状态、上一事件和当前状态交给 `UTG`，更新状态图。接着策略根据当前状态选择一个 `InputEvent`，例如触摸、按键、启动 Intent、文本输入或者杀进程。
+deploy() 的含义是：在正式开始 UI 探索之前，向设备预置一套"测试环境数据"，让被测应用启动后能遇到真实数据而不是空设备。
+
+**事件循环**是系统最关键的运行部分。`InputManager` 调用当前**输入策略**的 `generate_event`。策略会先从设备获取当前 `DeviceState`，也就是界面树、截图、Activity 或页面信息。然后策略把上一状态、上一事件和当前状态交给 `UTG`，更新状态图。接着策略根据当前状态选择一个 `InputEvent`，例如触摸、按键、启动 Intent、文本输入或者杀进程。
 
 事件选中之后，`InputManager` 会通过 `EventLog` 执行事件。`EventLog` 负责事件前后的记录、可选 profiling，以及等待设备从暂停状态恢复。事件执行后，新的界面状态又会进入下一轮循环。这个循环一直持续到达到事件数量、超时、手动停止或策略中断。
 
@@ -98,7 +99,7 @@ Android 路径和 HarmonyOS 路径在核心调度层保持统一，都由 `Droid
 
 分布式模式由 `DroidMaster` 负责。它维护一个 QEMU 设备池，默认有多个 slot。每个 slot 会关联一个 QEMU 实例和一个 DroidBot worker 子进程。
 
-Master 通过 `QEMUConn` 管理虚拟设备镜像、端口和快照，通过 `DroidBotConn` 启动或停止 worker。Worker 本质上仍然是一个普通的 DroidBot，只是它启动时会带上 master 的 XML-RPC 地址。
+Master 通过设备适配层的 `QEMUConn` 管理虚拟设备镜像、端口和快照，通过核心调度层的 `DroidBotConn` 启动或停止 worker。Worker 本质上仍然是一个普通的 DroidBot，只是它启动时会带上 master 的 XML-RPC 地址。
 
 当某个 worker 在探索过程中发现适合派生的新状态时，可以通过 XML-RPC 请求 master spawn 新 worker。Master 会基于当前 QEMU 快照创建新镜像和初始化脚本，再把任务分配给空闲设备 slot。
 

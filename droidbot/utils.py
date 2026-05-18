@@ -92,6 +92,25 @@ def md5(input_str):
     return hashlib.md5(input_str.encode("utf-8")).hexdigest()
 
 
+def package_resource_path(package: str, relative_path: str) -> str:
+    """
+    Filesystem path to data shipped inside an installed package (e.g. droidbot/resources/...).
+    Avoids pkg_resources, which is absent in some Python/setuptools combinations.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.find_spec(package)
+    if spec is None or not spec.origin:
+        raise FileNotFoundError("Cannot resolve package %r" % package)
+    root = Path(spec.origin).resolve().parent
+    rel = Path(*relative_path.replace("\\", "/").split("/"))
+    resolved = root / rel
+    if not resolved.exists():
+        raise FileNotFoundError("Package data missing: %s" % resolved)
+    return str(resolved)
+
+
 def get_yml_config() -> dict[str, str]:
     if not any(
         os.path.exists(ymal_path := os.path.join(os.getcwd(), _))

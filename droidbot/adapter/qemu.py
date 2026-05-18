@@ -1,11 +1,49 @@
 import logging
+import socket
 import subprocess
-import telnetlib
 import time
 from .adapter import Adapter
 
 
 QEMU_START_DELAY = 60
+
+
+class _QemuMonitorSocket:
+    """
+    QEMU -monitor telnet is plain TCP text; stdlib telnetlib was removed in Python 3.13+.
+    """
+
+    _read_timeout = 120.0
+
+    def __init__(self, host: str, port: int):
+        self._sock = socket.create_connection((host, port))
+        self._sock.settimeout(self._read_timeout)
+        self._buf = bytearray()
+
+    def read_until(self, expected: bytes) -> bytes:
+        while True:
+            idx = self._buf.find(expected)
+            if idx != -1:
+                take = idx + len(expected)
+                out = bytes(self._buf[:take])
+                del self._buf[:take]
+                return out
+            chunk = self._sock.recv(4096)
+            if not chunk:
+                raise EOFError(
+                    "QEMU monitor closed before %r"
+                    % (expected.decode(errors="replace"),)
+                )
+            self._buf.extend(chunk)
+
+    def write(self, data: bytes) -> None:
+        self._sock.sendall(data)
+
+    def close(self) -> None:
+        try:
+            self._sock.close()
+        except OSError:
+            pass
 
 
 class QEMUConnException(Exception):
@@ -66,7 +104,7 @@ class QEMUConn(Adapter):
 
     def connect(self, from_snapshot=False):
         # 1. Connect to QMP
-        self.qemu_tel = telnetlib.Telnet(host=self.domain, port=self.telnet_port)
+        self.qemu_tel = _QemuMonitorSocket(self.domain, self.telnet_port)
         self.logger.info(self.qemu_tel.read_until(self.utf8bytes("\r\n")))
         # 2. Recover adbd if from_snapshot
         if from_snapshot:
