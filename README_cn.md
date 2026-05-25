@@ -9,7 +9,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 :boom: 支持Android和HarmonyOS NEXT设备。使用标志 `-is_harmonyos` 来指定目标系统。
 
-:boom: 支持使用YMAL文件进行配置，简化启动方式。
+:boom: 支持使用YAML文件进行配置，简化启动方式。
 
 :boom: 源代码改进。更易于阅读和调试。为源代码添加了类型注解并对日志进行了上色。使用 `-debug` 标志将调试级别日志打印到终端！
 
@@ -79,6 +79,18 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     （可选参数）你可以在 config.yml 文件中配置其他参数，以便更方便地运行 Droidbot，从而避免通过命令行参数指定它们。请参阅下一小节的YAML配置教程。
 
+    HMDroidbot 启动时会从当前工作目录读取 `config.yml` 或 `config.yaml`。常用字段如下：
+
+    | 字段 | 含义 |
+    | --- | --- |
+    | `env` | 宿主机操作系统，用于选择 HDC 命令。`windows`/`win` 使用 `hdc.exe`；`macOS`、`mac`、`Linux` 或 `unix` 使用 `hdc`。 |
+    | `system` | 目标平台。设置为 `harmonyOS` 时启用 HarmonyOS 模式，其他值保持 Android 模式。 |
+    | `device`、`target` 或 `device_serial` | 目标设备序列号，来自 `hdc list targets` 或 `adb devices`。模拟器目标可能类似 `127.0.0.1:5555`。 |
+    | `output_dir` | 报告目录。HMDroidbot 会写入 `index.html`、`utg.js`、`states/`、截图以及可选日志。 |
+    | `app_path` | 目标 `.hap` 路径；相对路径基于当前工作目录解析。 |
+    | `count` | 最多发送的输入事件数量。 |
+    | `policy` | 输入策略，例如默认的 `dfs_greedy`，以及 `bfs_greedy`、`dfs_naive`、`bfs_naive`、`random`、`manual`、`monkey`、`none`。 |
+
 4. **启动HMDroidbot：**
 
     :+1: **（建议方式） 通过配置 `config.yml` 文件启动 HMDroidbot**
@@ -92,8 +104,9 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     device: 23E**********1843
     output_dir: output
-    apk_path: <absolute_path_to_hap>
+    app_path: app/sample.hap
     count: 1000
+    policy: dfs_greedy
     ```
 
     然后，运行 `droidbot` 或 `python -m droidbot.start`。
@@ -110,7 +123,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     测试开始后，您将在输出目录中实时找到许多有用的信息，包括生成的UTG。
 
-    + 如果您使用多个设备，您可能需要使用 `-t <device_serial>` 来指定目标设备。确定设备序列号的最简单方法是调用 `hdc list targets`。
+    + 当前启动检查要求只连接一个目标设备。如果同时连接了多个真机或模拟器，请在启动前只保留目标设备。确定设备序列号的最简单方法是调用 `hdc list targets`。
     + 如果您使用模拟器，使用hdc list targets命令时应该得到的是一个本地回环地址ip和端口：127.0.0.1:5555，您
       需要使用 `-t 127.0.0.1:5555` 来指定目标设备。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
     + 在调试源代码时， `-debug` 很有用。
@@ -122,10 +135,22 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     # 通过droidbot命令启动
     droidbot -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
 
+    # 使用随机策略启动，仍会记录状态和UTG报告。
+    droidbot -a app/sample.hap -o output -t 23E**********1843 -count 200 -is_harmonyos -policy random
+
     # 通过运行模块启动。易于调试！
     # 在HMDroidbot目录中执行以下命令。
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
+
+    **HarmonyOS 运行流程和输出**
+
+    1. 启动时先解析命令行参数（`-a`、`-o`、`-t`、`-count`、`-policy`、`-is_harmonyos`），再加载 `config.yml`/`config.yaml`；YAML 中存在的值会覆盖对应的命令行参数。
+    2. HarmonyOS 模式下，HMDroidbot 使用 `hdc list targets` 识别设备，按需安装 `.hap`，并从 `module.json` 和 `pack.info` 读取应用元数据。
+    3. UI 状态通过 HDC 调用 HmDriver 的 `captureLayout` API 获取；输入事件通过 `uitest uiInput` 发送。
+    4. 报告目录包含 HTML 报告、`utg.js`、`states/` 下每个状态的 JSON 和截图、运行期间的临时 dump 文件，以及启用 `-log` 后生成的 `hilog.txt`。
+
+    `random` 策略会在应用不在前台时启动或切回应用，然后从当前状态可用的 UI 事件和 Back 中随机选择。首次测试不熟悉的应用时，建议先设置较小的 `count`。
 
     **vscode `launch.json` 文件示例**
 
@@ -136,6 +161,12 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 我们使用WSL开发该项目，因此我们在此项目中使用的hdc工具实际上是通过在Windows上添加 `/mnt/.../hdc.exe` 到WSL路径的 `hdc.exe`。
 
 由于HarmonyOS NEXT处于测试版，配置hdc环境的过程有点复杂（尤其在WSL上）。WSL的配置总体思路是将hdc工具装在主系统，并从WSL的`mnt`路径下将主系统路径下的`hdc.exe` export出去（因为手机连在主系统上，这样做不用再配置USB口的转发），如果您在配置环境时遇到任何问题，请随时与我联系。
+
+- 请从包含 `config.yml` 或 `config.yaml` 的目录运行 HMDroidbot；HDC 适配器在导入时会读取该文件。
+- 如果启动时报存在多个设备，请在启动前断开多余设备。虽然 `device`/`target`/`device_serial` 和 `-t` 会设置后续 HDC 命令使用的序列号，但当前启动校验仍要求只连接一个目标。
+- 如果找不到 `hdc`，请检查 `config.yml` 中的 `env`，并确认对应的 `hdc` 或 `hdc.exe` 已加入 `PATH`。
+- YAML 中 `.hap` 文件路径请使用 `app_path`。如果 `.hap` 位于仓库外，请使用绝对路径。
+- HarmonyOS 运行请设置 `output_dir`；报告资源、截图和临时 UI dump 都会使用该目录。
 
 ## :mega: 信息
 目前，HMDroidbot由[华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/)维护。

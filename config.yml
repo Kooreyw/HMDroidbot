@@ -1,10 +1,21 @@
-# env: the system of your PC (e.g. windows, macOS, Linux)
+# env: host OS used to select hdc/hdc.exe (windows, macOS, Linux)
 env: Linux
 
-# system: the target harmonyOS
+# system: set to harmonyOS for HarmonyOS NEXT; other values keep Android mode
 system: harmonyOS
 
-# device: <device serial>
-# output_dir: <output path>
-# app_path: target .hap file
-# count: <number of events to input>
+# device: target serial from `hdc list targets` (aliases: target, device_serial)
+# device: 23E**********1843
+
+# output_dir: report directory for index.html, utg.js, states/, screenshots, logs
+# output_dir: output
+
+# app_path: target .hap file; relative paths are resolved from this directory
+# app_path: app/sample.hap
+
+# count: maximum number of input events to send
+# count: 1000
+
+# policy: input policy; default is dfs_greedy. Other options include
+# dfs_naive, bfs_naive, bfs_greedy, random, manual, monkey, none.
+# policy: random

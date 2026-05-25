@@ -82,6 +82,18 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 
     **(Optional)** You can configure other parameters in the `config.yml` file to run Droidbot more conveniently, avoiding the need to specify them via command-line arguments. See ***Run HMDroidbot by yml configuration*** below.
 
+    HMDroidbot reads `config.yml` or `config.yaml` from the current working directory before it starts. Supported keys include:
+
+    | Key | Meaning |
+    | --- | --- |
+    | `env` | Host OS used to choose the HDC executable. Use `windows`/`win` for `hdc.exe`; use `macOS`, `mac`, `Linux`, or `unix` for `hdc`. |
+    | `system` | Target platform. Set `harmonyOS` to enable HarmonyOS mode; any other value keeps Android mode. |
+    | `device`, `target`, or `device_serial` | Target serial from `hdc list targets` or `adb devices`. Emulator targets can look like `127.0.0.1:5555`. |
+    | `output_dir` | Report directory. HMDroidbot writes `index.html`, `utg.js`, `states/`, screenshots, and optional logs here. |
+    | `app_path` | Path to the target `.hap`; relative paths are resolved from the current working directory. |
+    | `count` | Maximum number of input events to send. |
+    | `policy` | Input policy, for example `dfs_greedy` (default), `bfs_greedy`, `dfs_naive`, `bfs_naive`, `random`, `manual`, `monkey`, or `none`. |
+
 
 1. **Start HMDroidbot:**
 
@@ -97,6 +109,7 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     output_dir: output
     app_path: app/sample.hap
     count: 1000
+    policy: dfs_greedy
     ```
 
     Then, simply run `droidbot` or `python -m droidbot.start` to start.
@@ -113,7 +126,7 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     
     That's it! You will find much useful information, including the UTG, generated in the output dir.
 
-    + If you are using multiple devices, you may need to use `-t <device_serial>` to specify the target device. The easiest way to determine a device's serial number is calling `hdc list targets`.
+    + The current startup check expects exactly one connected target. If multiple devices or emulators are attached, keep only the target connected before starting. The easiest way to determine a device's serial number is calling `hdc list targets`.
     + If you use an emulator. You can use the **hdc list targets** command to figure out a local loopback address IP and port like 127.0.0.1:5555. You may use ` - t 127.0.0.1:5555 ` to specify the target emulator. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
     + You may find the `-debug` tag useful while you are trying to debug the source code.
     + Use `-log` flag to get the hilog in HarmonyOS, which can be found in the report directory.
@@ -124,10 +137,22 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     # Start by droidbot cmd
     droidbot -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
 
+    # Start with the random policy. It still records states and UTG output.
+    droidbot -a app/sample.hap -o output -t 23E**********1843 -count 200 -is_harmonyos -policy random
+
     # Start by running module. Easy to debug!
     # execute the following command in the HMDroidbot dir, which should include the setup.py.
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
+
+    **HarmonyOS run workflow and outputs**
+
+    1. Startup parses command-line options (`-a`, `-o`, `-t`, `-count`, `-policy`, `-is_harmonyos`), then loads `config.yml`/`config.yaml`; values present in YAML override the matching command-line options.
+    2. In HarmonyOS mode, HMDroidbot uses `hdc list targets` to identify the connected device, installs the `.hap` when needed, and reads app metadata from `module.json` and `pack.info`.
+    3. UI state comes from the HmDriver `captureLayout` API through HDC; input events are sent with `uitest uiInput`.
+    4. The report directory contains the HTML report, `utg.js`, one JSON file and screenshot per saved state under `states/`, temporary dump files under `temp/` during the run, and `hilog.txt` when `-log` is enabled.
+
+    The `random` policy starts or returns to the app when it is not foreground, then chooses randomly from the current state's possible UI events plus Back. Use a smaller `count` first when smoke-testing an unfamiliar app.
 
     **vscode `launch.json` example**
 
@@ -138,6 +163,12 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 We used WSL to develop this project. so the hdc tool we used in this project is actually `hdc.exe` by adding `/mnt/.../hdc.exe` on windows to the WSL PATH.
 
 Due to HarmonyOS NEXT being in beta, the process of configuring the hdc environment is somewhat complex (especially on WSL). The overall idea for WSL configuration is to install the hdc tool on the host system and export the `hdc.exe` from the host system path through the WSL `mnt` path (since the phone is connected to the host system, this eliminates the need to configure USB port forwarding). If you encounter any issues while setting up the environment, please feel free to contact us.
+
+- Run HMDroidbot from the directory that contains `config.yml` or `config.yaml`; the HDC adapter reads this file while it is imported.
+- If startup reports more than one attached device, disconnect extra devices before starting. Although `device`/`target`/`device_serial` and `-t` set the serial used by later HDC commands, the startup validation currently requires a single attached target.
+- If `hdc` is not found, check `env` in `config.yml` and make sure the matching `hdc` or `hdc.exe` is on `PATH`.
+- Use `app_path` in YAML for `.hap` files. If the `.hap` is outside the repository, use an absolute path.
+- Keep `output_dir` set for HarmonyOS runs; it is used for the report assets, screenshots, and temporary UI dumps.
 
 ## :mega: Info
 Currently, HMDroidbot is maintained by [华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/). 
