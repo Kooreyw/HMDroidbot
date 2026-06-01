@@ -31,15 +31,15 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 
     We provided some sample hap for testing [here](https://github.com/XixianLiang/HarmonyOS_NEXT_apps).
 
-    + A device or an emulator connected to your host machine via `hdc`. Use `hdc list targets` to checkout the connected device.
+    + A device or an emulator connected to your host machine via `hdc`. Use `hdc list targets` to check the connected device.
   
-    + The `SYSTEM` variable is correctly chosen. See [trouble shooting](https://github.com/XixianLiang/HMdroidbot?tab=readme-ov-file#trouble-shooting).
+    + The `env` value in `config.yml` is correctly chosen. See [trouble shooting](https://github.com/XixianLiang/HMdroidbot?tab=readme-ov-file#trouble-shooting).
   
     + Install the required packages.
 
         Clone this repo and install with `pip`.
 
-       :one: *(Optional)* You can setup a virtual envirnment before installation. See [venv module](https://realpython.com/python-virtual-environments-a-primer/) for details.
+       :one: *(Optional)* You can setup a virtual environment before installation. See [venv module](https://realpython.com/python-virtual-environments-a-primer/) for details.
 
        In macOS or Linux:
        ```shell
@@ -74,7 +74,7 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
    
    Use the correct param based on your PC operating system.
 
-    **(Required)** `env` is necessary to lanuch HMDroidbot
+    **(Required)** `env` is necessary to launch HMDroidbot
    ```bash
    # config.yml
    env: <windows, macOS or Linux>
@@ -93,11 +93,24 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     # system: the target harmonyOS
     system: harmonyOS
 
+    # device: optional when exactly one target is connected
     device: 23E**********1843
     output_dir: output
     app_path: app/sample.hap
+
+    # policy: input policy, default is dfs_greedy
+    policy: dfs_greedy
     count: 1000
     ```
+
+    `config.yml` is read from the current working directory. Supported keys include:
+    + `env`: host system used to select the HDC wrapper (`windows`, `macOS`, or `Linux`).
+    + `system`: target system; use `harmonyOS` for HarmonyOS NEXT.
+    + `app_path`: target `.hap` path. For an already installed HarmonyOS app, this can also be the bundle name.
+    + `output_dir`: report directory for UTG, screenshots, package dumps, and optional logs.
+    + `device`, `target`, or `device_serial`: target serial from `hdc list targets` or `adb devices`.
+    + `policy`: input policy such as `dfs_greedy`, `dfs_naive`, `bfs_greedy`, `bfs_naive`, `random`, `monkey`, `manual`, or `none`.
+    + `count`: number of input events to generate.
 
     Then, simply run `droidbot` or `python -m droidbot.start` to start.
 
@@ -113,9 +126,7 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     
     That's it! You will find much useful information, including the UTG, generated in the output dir.
 
-    + If you are using multiple devices, you may need to use `-t <device_serial>` to specify the target device. The easiest way to determine a device's serial number is calling `hdc list targets`.
-    + If you use an emulator. You can use the **hdc list targets** command to figure out a local loopback address IP and port like 127.0.0.1:5555. You may use ` - t 127.0.0.1:5555 ` to specify the target emulator. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
-    + You may find the `-debug` tag useful while you are trying to debug the source code.
+    + You may find the `-debug` flag useful while you are trying to debug the source code.
     + Use `-log` flag to get the hilog in HarmonyOS, which can be found in the report directory.
     + You may find other useful features in `droidbot -h`.
 
@@ -129,6 +140,18 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **Input policies**
+    + The default policy is `dfs_greedy`, which uses the UTG to prioritize unexplored UI states.
+    + Use `-policy random` or `policy: random` to choose random events from the current state's possible inputs. If the app is not foreground, the policy first returns the app start intent.
+    + `-random` is different from `-policy random`: it adds randomness to generated input coordinates for UTG-based policies.
+    + `manual` and `none` do not automatically explore the app; `monkey` delegates events to `adb shell monkey`.
+
+    **Device and emulator selection**
+    + With exactly one connected target, HMDroidbot auto-detects the serial from `hdc list targets` for HarmonyOS or `adb devices` for Android.
+    + When more than one target is attached, make `hdc list targets` or `adb devices` show only the intended target before rerunning. You can also set `device:` in `config.yml` or pass `-t <device_serial>` so downstream commands use the same serial.
+    + HarmonyOS emulators commonly appear as a loopback target such as `127.0.0.1:5555`; use that value for `device:` or `-t` after configuring the emulator in DevEco Studio.
+    + For HarmonyOS UI capture, HMDroidbot chooses the UITest agent from `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so`, where `<cpu_abi>` comes from `param get const.product.cpu.abilist`. Check this path when using x86_64 emulators or arm64 devices.
+
     **vscode `launch.json` example**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
@@ -138,6 +161,16 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 We used WSL to develop this project. so the hdc tool we used in this project is actually `hdc.exe` by adding `/mnt/.../hdc.exe` on windows to the WSL PATH.
 
 Due to HarmonyOS NEXT being in beta, the process of configuring the hdc environment is somewhat complex (especially on WSL). The overall idea for WSL configuration is to install the hdc tool on the host system and export the `hdc.exe` from the host system path through the WSL `mnt` path (since the phone is connected to the host system, this eliminates the need to configure USB port forwarding). If you encounter any issues while setting up the environment, please feel free to contact us.
+
+### HarmonyOS UI hierarchy capture
+
+HarmonyOS view trees are captured through `HmDriverDumper`: HMDroidbot starts the UITest daemon, pushes `/data/local/tmp/agent.so`, opens a local HMDriver socket, requests Hypium `captureLayout`, and converts the result into the Android-style view fields used by the UTG.
+
+If UTG generation fails before any states are recorded:
+
++ Run with `-debug` and check whether `uitest start-daemon singleness` started successfully.
++ Verify that `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so` exists for the device ABI reported by `hdc shell param get const.product.cpu.abilist`.
++ Confirm that `hdc list targets` shows the intended device and that only one target is visible if serial auto-detection fails.
 
 ## :mega: Info
 Currently, HMDroidbot is maintained by [华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/). 

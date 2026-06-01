@@ -9,7 +9,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 :boom: 支持Android和HarmonyOS NEXT设备。使用标志 `-is_harmonyos` 来指定目标系统。
 
-:boom: 支持使用YMAL文件进行配置，简化启动方式。
+:boom: 支持使用YAML文件进行配置，简化启动方式。
 
 :boom: 源代码改进。更易于阅读和调试。为源代码添加了类型注解并对日志进行了上色。使用 `-debug` 标志将调试级别日志打印到终端！
 
@@ -30,7 +30,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     + 一台通过 `hdc` 连接到主机的设备或模拟器。使用 `hdc list targets` 检查连接的设备。
 
-    + 根据系统正确选择 `SYSTEM` 变量。请参见下文 **故障排除** 章节。
+    + 根据系统正确选择 `config.yml` 中的 `env`。请参见下文 **故障排除** 章节。
 
     + 安装所需的包。
 
@@ -90,11 +90,24 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     # system: the target harmonyOS
     system: harmonyOS
 
+    # device: 只有一个目标设备时可以省略
     device: 23E**********1843
     output_dir: output
-    apk_path: <absolute_path_to_hap>
+    app_path: app/sample.hap
+
+    # policy: 输入策略，默认是 dfs_greedy
+    policy: dfs_greedy
     count: 1000
     ```
+
+    `config.yml` 会从当前工作目录读取。支持的常用字段包括：
+    + `env`：宿主机系统，用于选择 HDC 封装（`windows`、`macOS` 或 `Linux`）。
+    + `system`：目标系统；HarmonyOS NEXT 使用 `harmonyOS`。
+    + `app_path`：目标 `.hap` 路径。如果 HarmonyOS 应用已经安装，也可以填写 bundle name。
+    + `output_dir`：报告目录，保存 UTG、截图、包信息和可选日志。
+    + `device`、`target` 或 `device_serial`：来自 `hdc list targets` 或 `adb devices` 的目标序列号。
+    + `policy`：输入策略，例如 `dfs_greedy`、`dfs_naive`、`bfs_greedy`、`bfs_naive`、`random`、`monkey`、`manual` 或 `none`。
+    + `count`：要生成的输入事件数量。
 
     然后，运行 `droidbot` 或 `python -m droidbot.start`。
 
@@ -110,9 +123,6 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     测试开始后，您将在输出目录中实时找到许多有用的信息，包括生成的UTG。
 
-    + 如果您使用多个设备，您可能需要使用 `-t <device_serial>` 来指定目标设备。确定设备序列号的最简单方法是调用 `hdc list targets`。
-    + 如果您使用模拟器，使用hdc list targets命令时应该得到的是一个本地回环地址ip和端口：127.0.0.1:5555，您
-      需要使用 `-t 127.0.0.1:5555` 来指定目标设备。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
     + 在调试源代码时， `-debug` 很有用。
     + 使用 `-log` 标志获取HarmonyOS中的hilog，可以在报告目录中找到这个文件。
     + 您可以在 `droidbot -h` 中找到其他有用的功能。
@@ -127,6 +137,18 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **输入策略**
+    + 默认策略是 `dfs_greedy`，它会基于 UTG 优先探索未覆盖的 UI 状态。
+    + 使用 `-policy random` 或在 `config.yml` 中设置 `policy: random`，会从当前状态可执行的输入事件中随机选择。如果应用不在前台，该策略会先返回启动应用的 intent。
+    + `-random` 与 `-policy random` 不同：它为 UTG 策略生成的输入坐标增加随机性。
+    + `manual` 和 `none` 不会自动探索应用；`monkey` 会委托给 `adb shell monkey` 发送事件。
+
+    **设备与模拟器选择**
+    + 只有一个目标连接时，HMDroidbot 会从 HarmonyOS 的 `hdc list targets` 或 Android 的 `adb devices` 自动识别序列号。
+    + 如果连接了多个目标，请先让 `hdc list targets` 或 `adb devices` 只显示要测试的目标后再启动。也可以在 `config.yml` 中设置 `device:` 或在命令行传入 `-t <device_serial>`，确保后续命令使用同一个序列号。
+    + HarmonyOS 模拟器通常显示为 `127.0.0.1:5555` 这样的本地回环目标；在 DevEco Studio 中配置模拟器后，可将该值用于 `device:` 或 `-t`。
+    + HarmonyOS UI 捕获会根据 `param get const.product.cpu.abilist` 的结果选择 `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so`。使用 x86_64 模拟器或 arm64 真机时，请确认对应 ABI 的文件存在。
+
     **vscode `launch.json` 文件示例**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
@@ -136,6 +158,16 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 我们使用WSL开发该项目，因此我们在此项目中使用的hdc工具实际上是通过在Windows上添加 `/mnt/.../hdc.exe` 到WSL路径的 `hdc.exe`。
 
 由于HarmonyOS NEXT处于测试版，配置hdc环境的过程有点复杂（尤其在WSL上）。WSL的配置总体思路是将hdc工具装在主系统，并从WSL的`mnt`路径下将主系统路径下的`hdc.exe` export出去（因为手机连在主系统上，这样做不用再配置USB口的转发），如果您在配置环境时遇到任何问题，请随时与我联系。
+
+### HarmonyOS UI 层级捕获
+
+HarmonyOS 视图树通过 `HmDriverDumper` 捕获：HMDroidbot 会启动 UITest daemon，推送 `/data/local/tmp/agent.so`，建立本地 HMDriver socket，请求 Hypium `captureLayout`，并将返回结果转换为 UTG 使用的 Android 风格 view 字段。
+
+如果 UTG 生成前就无法获取状态：
+
++ 使用 `-debug` 运行，并检查 `uitest start-daemon singleness` 是否成功启动。
++ 确认 `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so` 存在，其中 `<cpu_abi>` 来自 `hdc shell param get const.product.cpu.abilist`。
++ 确认 `hdc list targets` 显示的是目标设备；如果自动识别序列号失败，请先保证列表中只有一个目标。
 
 ## :mega: 信息
 目前，HMDroidbot由[华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/)维护。

@@ -6,5 +6,6 @@ system: harmonyOS
 
 # device: <device serial>
 # output_dir: <output path>
-# app_path: target .hap file
+# app_path: target .hap file, or installed HarmonyOS bundle name
+# policy: dfs_greedy | dfs_naive | bfs_greedy | bfs_naive | random | monkey | manual | none
 # count: <number of events to input>
