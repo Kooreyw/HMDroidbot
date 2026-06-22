@@ -1,10 +1,20 @@
-# env: the system of your PC (e.g. windows, macOS, Linux)
+# HMDroidbot reads config.yml/config.yaml from the current working directory.
+# The env key is required and selects the HDC executable:
+# - Linux/macOS/unix/mac -> hdc
+# - windows/win -> hdc.exe
 env: Linux
 
-# system: the target harmonyOS
+# Target system. Use harmonyOS for HarmonyOS NEXT devices.
+# This is equivalent to passing -is_harmonyos on the command line.
 system: harmonyOS
 
-# device: <device serial>
-# output_dir: <output path>
-# app_path: target .hap file
-# count: <number of events to input>
+# Optional run settings. YAML values override matching CLI options.
+#
+# device: <device serial from `hdc list targets`>
+# target: <alias for device>
+# device_serial: <alias for device>
+# output_dir: <output path for index.html, utg.js, states/, views/, events/>
+# app_path: <target .hap file or installed bundle name>
+# count: <number of input events>
+# policy: <dfs_greedy|dfs_naive|bfs_greedy|bfs_naive|random|manual|none>
+# save_log: true
