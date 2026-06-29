@@ -72,7 +72,9 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 
 3. **Setting up `config.yml`**
    
-   Use the correct param based on your PC operating system.
+   HMDroidbot loads `config.yml` or `config.yaml` from the current working
+   directory during startup, even when most options are passed on the command
+   line. Use the correct `env` value for the HDC command available on your PC.
 
     **(Required)** `env` is necessary to lanuch HMDroidbot
    ```bash
@@ -81,6 +83,9 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
    ```
 
     **(Optional)** You can configure other parameters in the `config.yml` file to run Droidbot more conveniently, avoiding the need to specify them via command-line arguments. See ***Run HMDroidbot by yml configuration*** below.
+
+    For a source-verified key reference, HDC executable selection rules, WSL notes,
+    and common startup errors, see [Configuration and HDC environment runbook](docs/config-and-hdc-environment.md).
 
 
 1. **Start HMDroidbot:**
@@ -113,8 +118,8 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     
     That's it! You will find much useful information, including the UTG, generated in the output dir.
 
-    + If you are using multiple devices, you may need to use `-t <device_serial>` to specify the target device. The easiest way to determine a device's serial number is calling `hdc list targets`.
-    + If you use an emulator. You can use the **hdc list targets** command to figure out a local loopback address IP and port like 127.0.0.1:5555. You may use ` - t 127.0.0.1:5555 ` to specify the target emulator. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
+    + The current startup code expects exactly one connected target when it runs `hdc list targets` or `adb devices`. Disconnect extra devices or emulators before running this version.
+    + If you use an emulator, use **hdc list targets** to confirm the local loopback address and port, such as 127.0.0.1:5555, is the only connected target before startup. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
     + You may find the `-debug` tag useful while you are trying to debug the source code.
     + Use `-log` flag to get the hilog in HarmonyOS, which can be found in the report directory.
     + You may find other useful features in `droidbot -h`.
@@ -138,6 +143,8 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 We used WSL to develop this project. so the hdc tool we used in this project is actually `hdc.exe` by adding `/mnt/.../hdc.exe` on windows to the WSL PATH.
 
 Due to HarmonyOS NEXT being in beta, the process of configuring the hdc environment is somewhat complex (especially on WSL). The overall idea for WSL configuration is to install the hdc tool on the host system and export the `hdc.exe` from the host system path through the WSL `mnt` path (since the phone is connected to the host system, this eliminates the need to configure USB port forwarding). If you encounter any issues while setting up the environment, please feel free to contact us.
+
+See [Configuration and HDC environment runbook](docs/config-and-hdc-environment.md) for a troubleshooting table covering missing config files, `hdc`/`hdc.exe` lookup, WSL host-device setup, device discovery, and HAP path problems.
 
 ## :mega: Info
 Currently, HMDroidbot is maintained by [华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/). 
