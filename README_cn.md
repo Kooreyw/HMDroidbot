@@ -69,7 +69,9 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 3. **配置 `config.yml`**
 
-    根据你的电脑操作系统使用正确的参数。
+    HMDroidbot 启动时会从当前工作目录读取 `config.yml` 或 `config.yaml`，
+    即使大部分参数通过命令行传入也需要保留该文件。请根据本机可用的 HDC
+    命令选择正确的 `env` 值。
 
     （必选参数）env：你的操作系统。
     ```bash
@@ -78,6 +80,8 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     ```
 
     （可选参数）你可以在 config.yml 文件中配置其他参数，以便更方便地运行 Droidbot，从而避免通过命令行参数指定它们。请参阅下一小节的YAML配置教程。
+
+    配置项、HDC 命令选择、WSL 注意事项和常见启动错误请参考 [Configuration and HDC environment runbook](docs/config-and-hdc-environment.md)。
 
 4. **启动HMDroidbot：**
 
@@ -92,7 +96,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     device: 23E**********1843
     output_dir: output
-    apk_path: <absolute_path_to_hap>
+    app_path: <absolute_path_to_hap>
     count: 1000
     ```
 
@@ -110,9 +114,8 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     测试开始后，您将在输出目录中实时找到许多有用的信息，包括生成的UTG。
 
-    + 如果您使用多个设备，您可能需要使用 `-t <device_serial>` 来指定目标设备。确定设备序列号的最简单方法是调用 `hdc list targets`。
-    + 如果您使用模拟器，使用hdc list targets命令时应该得到的是一个本地回环地址ip和端口：127.0.0.1:5555，您
-      需要使用 `-t 127.0.0.1:5555` 来指定目标设备。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
+    + 当前启动代码在执行 `hdc list targets` 或 `adb devices` 时要求只连接一个目标设备；运行前请断开额外的设备或模拟器。
+    + 如果您使用模拟器，使用 hdc list targets 命令时应该得到一个本地回环地址和端口，例如 127.0.0.1:5555。请确认它是启动前唯一连接的目标。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
     + 在调试源代码时， `-debug` 很有用。
     + 使用 `-log` 标志获取HarmonyOS中的hilog，可以在报告目录中找到这个文件。
     + 您可以在 `droidbot -h` 中找到其他有用的功能。
@@ -136,6 +139,8 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 我们使用WSL开发该项目，因此我们在此项目中使用的hdc工具实际上是通过在Windows上添加 `/mnt/.../hdc.exe` 到WSL路径的 `hdc.exe`。
 
 由于HarmonyOS NEXT处于测试版，配置hdc环境的过程有点复杂（尤其在WSL上）。WSL的配置总体思路是将hdc工具装在主系统，并从WSL的`mnt`路径下将主系统路径下的`hdc.exe` export出去（因为手机连在主系统上，这样做不用再配置USB口的转发），如果您在配置环境时遇到任何问题，请随时与我联系。
+
+更多排查项请参考 [Configuration and HDC environment runbook](docs/config-and-hdc-environment.md)，其中包括缺少配置文件、`hdc`/`hdc.exe` 查找、WSL 主机设备连接、设备发现和 HAP 路径问题。
 
 ## :mega: 信息
 目前，HMDroidbot由[华东师范大学-移动软件分析与测试小组](https://mobile-app-analysis.github.io/)维护。
