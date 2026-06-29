@@ -158,4 +158,3 @@ python3 -m droidbot.start -a /absolute/path/to/sample.hap -o output
 | `More than one attached devices...`. | This version requires exactly one connected target during startup; disconnect extra devices/emulators. |
 | HAP path does not exist. | Run from the directory expected by `config.yml`, or use an absolute `app_path`/`-a` value. |
 | YAML `apk_path` is ignored. | Use `app_path`; the loader maps `app_path` onto the internal `apk_path` option. |
-
