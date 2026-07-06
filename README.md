@@ -119,6 +119,18 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     + Use `-log` flag to get the hilog in HarmonyOS, which can be found in the report directory.
     + You may find other useful features in `droidbot -h`.
 
+    **HarmonyOS UI hierarchy capture (HmDriver)**
+
+    HMDroidbot builds HarmonyOS states and UTG nodes from the UI hierarchy returned by HmDriver. When a foreground ability is active, `DeviceHM.get_current_state()` calls the HDC view dumper, which uses HmDriver to request Hypium `Captures.captureLayout` over a local socket instead of Android accessibility.
+
+    Runtime flow and constraints:
+
+    + HmDriver starts the HarmonyOS UITest daemon with `uitest start-daemon singleness`.
+    + It forwards a local TCP port to the device UITest service port `8012` with `hdc fport`.
+    + It selects the device-side agent from `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so`, where `<cpu_abi>` comes from `hdc shell param get const.product.cpu.abilist`, then pushes it to `/data/local/tmp/agent.so` when the remote copy is missing or has a different MD5.
+    + The captured tree is converted into DroidBot-style views. HarmonyOS fields such as `bundleName` and `pagePath` are preserved as `package` and page metadata, and are used by the UTG and coverage report.
+    + If exploration stalls, the state is empty, or you see `Error when getting views`, rerun with `-debug` and check the HmDriver/HDC logs. Common causes are a missing ABI-specific `agent.so`, failed `hdc fport` setup, an unavailable UITest daemon, or a device ABI that has no matching local agent directory.
+
     **Example Starting Scripts**
     ```bash
     # Start by droidbot cmd

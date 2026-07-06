@@ -92,7 +92,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     device: 23E**********1843
     output_dir: output
-    apk_path: <absolute_path_to_hap>
+    app_path: app/sample.hap
     count: 1000
     ```
 
@@ -116,6 +116,18 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     + 在调试源代码时， `-debug` 很有用。
     + 使用 `-log` 标志获取HarmonyOS中的hilog，可以在报告目录中找到这个文件。
     + 您可以在 `droidbot -h` 中找到其他有用的功能。
+
+    **HarmonyOS UI层级获取（HmDriver）**
+
+    HMDroidbot 依赖 HmDriver 返回的 UI 层级来构建 HarmonyOS 状态和 UTG 节点。当存在前台 ability 时，`DeviceHM.get_current_state()` 会调用 HDC 的视图 dumper；当前默认 dumper 会通过本地 socket 请求 Hypium 的 `Captures.captureLayout`，而不是使用 Android accessibility。
+
+    运行流程和约束：
+
+    + HmDriver 会通过 `uitest start-daemon singleness` 启动 HarmonyOS UITest daemon。
+    + 它会使用 `hdc fport` 将本地 TCP 端口转发到设备端 UITest 服务端口 `8012`。
+    + 它会根据 `hdc shell param get const.product.cpu.abilist` 返回的 `<cpu_abi>`，从 `droidbot/adapter/hmdriver/assets/so/<cpu_abi>/agent.so` 选择设备端 agent，并在 `/data/local/tmp/agent.so` 不存在或 MD5 不一致时推送到设备。
+    + 获取到的层级会被转换为 DroidBot 风格的 views。`bundleName`、`pagePath` 等 HarmonyOS 字段会保留下来，用于 UTG 和覆盖率报告中的包名、页面信息。
+    + 如果探索卡住、状态为空，或日志中出现 `Error when getting views`，请使用 `-debug` 重新运行并检查 HmDriver/HDC 日志。常见原因包括缺少与设备 ABI 匹配的 `agent.so`、`hdc fport` 转发失败、UITest daemon 不可用，或本地不存在对应 ABI 的 agent 目录。
 
     **示例启动脚本**
     ```bash
