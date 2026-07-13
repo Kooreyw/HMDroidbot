@@ -9,7 +9,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 :boom: 支持Android和HarmonyOS NEXT设备。使用标志 `-is_harmonyos` 来指定目标系统。
 
-:boom: 支持使用YMAL文件进行配置，简化启动方式。
+:boom: 支持使用YAML文件进行配置，简化启动方式。
 
 :boom: 源代码改进。更易于阅读和调试。为源代码添加了类型注解并对日志进行了上色。使用 `-debug` 标志将调试级别日志打印到终端！
 
@@ -69,50 +69,61 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 3. **配置 `config.yml`**
 
-    根据你的电脑操作系统使用正确的参数。
+    HMDroidbot 启动时会从当前工作目录读取 `config.yml` 或 `config.yaml`。请把该文件放在执行命令的目录中；即使使用命令行参数启动，也需要它提供 HarmonyOS HDC 适配器使用的 `env` 值。
 
-    （必选参数）env：你的操作系统。
-    ```bash
-    # config.yml
-    env: <windows, macOS 或 Linux>
+    YAML 会在命令行参数解析之后加载，因此 `config.yml` 中非空的同名配置会覆盖命令行参数。
+
+    | YAML 字段 | 对应参数 | 说明 |
+    | --- | --- | --- |
+    | `env` | HDC 可执行文件选择 | 必填。`windows`/`win` 使用 `hdc.exe`；`macOS`/`mac`/`Linux`/`unix` 使用 `hdc`。 |
+    | `system` | `-is_harmonyos` | HarmonyOS 运行时填写 `harmonyOS`。 |
+    | `app_path` | `-a` / 内部 `apk_path` | 目标 `.hap` 文件路径；相对路径会按当前工作目录解析。 |
+    | `output_dir` | `-o` | 生成报告、UTG、状态文件和可选日志的目录。 |
+    | `count` | `-count` | 最大输入事件数量。 |
+    | `policy` | `-policy` | 例如默认的 `dfs_greedy`，以及 `dfs_naive`、`bfs_greedy`、`bfs_naive`、`random`、`manual`、`monkey`、`none`。 |
+    | `device`、`target`、`device_serial` | `-t` / `-d` | 当前启动流程会自动识别且要求仅连接一个目标；如果连接多个目标，会在使用配置的序列号前失败。 |
+    | 其他 CLI destination 名称 | 对应解析参数 | 例如 `debug_mode: true`、`save_log: true`、`interval: 1`、`timeout: -1`、`random_input: true`。 |
+
+    示例：
+
+    ```yaml
+    env: Linux
+    system: harmonyOS
+    app_path: app/sample.hap
+    output_dir: output
+    count: 1000
+    policy: dfs_greedy
+    # device: 23E**********1843
+    # save_log: true
+    # debug_mode: true
     ```
-
-    （可选参数）你可以在 config.yml 文件中配置其他参数，以便更方便地运行 Droidbot，从而避免通过命令行参数指定它们。请参阅下一小节的YAML配置教程。
 
 4. **启动HMDroidbot：**
 
-    :+1: **（建议方式） 通过配置 `config.yml` 文件启动 HMDroidbot**
+    :+1: **（建议方式）在包含 `config.yml` 的目录中启动 HMDroidbot**
 
     ```bash
-    # env: the system of your PC (e.g. windows, macOS, Linux)
-    env: macOS
-
-    # system: the target harmonyOS
-    system: harmonyOS
-
-    device: 23E**********1843
-    output_dir: output
-    apk_path: <absolute_path_to_hap>
-    count: 1000
+    droidbot
+    # 或
+    python -m droidbot.start
     ```
 
-    然后，运行 `droidbot` 或 `python -m droidbot.start`。
-
-    **通过 `python -m` 运行HMDroidbot**
+    **通过 `python -m` 搭配命令行参数运行HMDroidbot**
     ```bash
     python3 -m droidbot.start -a <hap的路径> -o output_dir -is_harmonyos
     ```
     
-    **通过 `droidbot` 运行HMDroidbot**
+    **通过 `droidbot` 搭配命令行参数运行HMDroidbot**
     ```bash
     droidbot -a <hap的路径> -o output_dir -is_harmonyos
     ```
 
+    使用命令行参数时，当前工作目录仍需保留包含 `env` 的最小 `config.yml`。如果同一个参数也写在 YAML 中，会以 YAML 的值为准。
+
     测试开始后，您将在输出目录中实时找到许多有用的信息，包括生成的UTG。
 
-    + 如果您使用多个设备，您可能需要使用 `-t <device_serial>` 来指定目标设备。确定设备序列号的最简单方法是调用 `hdc list targets`。
-    + 如果您使用模拟器，使用hdc list targets命令时应该得到的是一个本地回环地址ip和端口：127.0.0.1:5555，您
-      需要使用 `-t 127.0.0.1:5555` 来指定目标设备。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
+    + 当前启动流程要求只连接一个目标。运行前可使用 `hdc list targets` 检查已连接的 HarmonyOS 设备或模拟器。
+    + 如果您使用模拟器，`hdc list targets` 通常会显示类似 `127.0.0.1:5555` 的本地回环地址和端口。运行时请只保留这个模拟器目标连接。（模拟器需要在鸿蒙开发工具Deveco Studio中配置，具体配置参考[官方教程](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5)）
     + 在调试源代码时， `-debug` 很有用。
     + 使用 `-log` 标志获取HarmonyOS中的hilog，可以在报告目录中找到这个文件。
     + 您可以在 `droidbot -h` 中找到其他有用的功能。
@@ -120,11 +131,11 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     **示例启动脚本**
     ```bash
     # 通过droidbot命令启动
-    droidbot -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    droidbot -a app/sample.hap -o output -count 1000 -is_harmonyos -debug
 
     # 通过运行模块启动。易于调试！
     # 在HMDroidbot目录中执行以下命令。
-    python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    python -m droidbot.start -a app/sample.hap -o output -count 1000 -is_harmonyos -debug
     ```
 
     **vscode `launch.json` 文件示例**
