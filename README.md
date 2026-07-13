@@ -71,50 +71,62 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     ```
 
 3. **Setting up `config.yml`**
-   
-   Use the correct param based on your PC operating system.
 
-    **(Required)** `env` is necessary to lanuch HMDroidbot
-   ```bash
-   # config.yml
-   env: <windows, macOS or Linux>
-   ```
+    HMDroidbot reads `config.yml` or `config.yaml` from the current working directory during startup. Keep this file next to the command you run; even command-line launches need it for the `env` value used by the HarmonyOS HDC adapter.
 
-    **(Optional)** You can configure other parameters in the `config.yml` file to run Droidbot more conveniently, avoiding the need to specify them via command-line arguments. See ***Run HMDroidbot by yml configuration*** below.
+    YAML values are loaded after command-line arguments are parsed, so non-empty keys in `config.yml` override the matching CLI options.
 
+    | YAML key | Maps to | Notes |
+    | --- | --- | --- |
+    | `env` | HDC executable selection | Required. `windows`/`win` uses `hdc.exe`; `macOS`/`mac`/`Linux`/`unix` uses `hdc`. |
+    | `system` | `-is_harmonyos` | Use `harmonyOS` for HarmonyOS runs. |
+    | `app_path` | `-a` / internal `apk_path` | Path to the target `.hap`; relative paths are resolved from the current working directory. |
+    | `output_dir` | `-o` | Directory for the generated report, UTG, states, and optional logs. |
+    | `count` | `-count` | Maximum number of input events. |
+    | `policy` | `-policy` | For example `dfs_greedy` (default), `dfs_naive`, `bfs_greedy`, `bfs_naive`, `random`, `manual`, `monkey`, or `none`. |
+    | `device`, `target`, `device_serial` | `-t` / `-d` | Current startup auto-identifies exactly one connected target; multiple connected targets cause startup to fail before a configured serial is used. |
+    | Other CLI destination names | matching parser option | Examples: `debug_mode: true`, `save_log: true`, `interval: 1`, `timeout: -1`, `random_input: true`. |
 
-1. **Start HMDroidbot:**
+    Example:
 
-    **:+1: (Recommended) Run HMDroidbot by configuring `config.yml` file. Here's an example `config.yml` configuration.**
-    ```bash
-    # env: the system of your PC (e.g. windows, macOS, Linux)
-    env: macOS
-
-    # system: the target harmonyOS
+    ```yaml
+    env: Linux
     system: harmonyOS
-
-    device: 23E**********1843
-    output_dir: output
     app_path: app/sample.hap
+    output_dir: output
     count: 1000
+    policy: dfs_greedy
+    # device: 23E**********1843
+    # save_log: true
+    # debug_mode: true
     ```
 
-    Then, simply run `droidbot` or `python -m droidbot.start` to start.
+4. **Start HMDroidbot:**
 
-    **Run HMDroidbot by `python -m`**
+    **:+1: (Recommended) Run HMDroidbot from the directory containing `config.yml`.**
+
+    ```bash
+    droidbot
+    # or
+    python -m droidbot.start
+    ```
+
+    **Run HMDroidbot by `python -m` with CLI options**
     ```bash
     python3 -m droidbot.start -a <path_to_hap> -o output_dir -is_harmonyos
     ```
     
-    **Run HMDroidbot by `droidbot`**
+    **Run HMDroidbot by `droidbot` with CLI options**
     ```bash
     droidbot -a <path_to_hap> -o output_dir -is_harmonyos
     ```
     
+    Keep a minimal `config.yml` with `env` in the current working directory when using CLI options. If the same option is also present in YAML, the YAML value wins.
+
     That's it! You will find much useful information, including the UTG, generated in the output dir.
 
-    + If you are using multiple devices, you may need to use `-t <device_serial>` to specify the target device. The easiest way to determine a device's serial number is calling `hdc list targets`.
-    + If you use an emulator. You can use the **hdc list targets** command to figure out a local loopback address IP and port like 127.0.0.1:5555. You may use ` - t 127.0.0.1:5555 ` to specify the target emulator. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
+    + Current startup expects exactly one connected target. Use `hdc list targets` to check connected HarmonyOS devices or emulators before running.
+    + If you use an emulator, `hdc list targets` usually reports a local loopback address and port like `127.0.0.1:5555`. Keep only that emulator connected for the run. (The emulator needs to be configured in the Deveco Studio development tool of HarmonyOS. Please refer to the [configuration tutorial](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-emulator-create-V5))
     + You may find the `-debug` tag useful while you are trying to debug the source code.
     + Use `-log` flag to get the hilog in HarmonyOS, which can be found in the report directory.
     + You may find other useful features in `droidbot -h`.
@@ -122,11 +134,11 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     **Example Starting Scripts**
     ```bash
     # Start by droidbot cmd
-    droidbot -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    droidbot -a app/sample.hap -o output -count 1000 -is_harmonyos -debug
 
     # Start by running module. Easy to debug!
     # execute the following command in the HMDroidbot dir, which should include the setup.py.
-    python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    python -m droidbot.start -a app/sample.hap -o output -count 1000 -is_harmonyos -debug
     ```
 
     **vscode `launch.json` example**

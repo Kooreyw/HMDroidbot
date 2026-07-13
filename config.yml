@@ -1,10 +1,15 @@
-# env: the system of your PC (e.g. windows, macOS, Linux)
+# env is required. It selects the HDC executable:
+# - windows/win -> hdc.exe
+# - macOS/mac/Linux/unix -> hdc
 env: Linux
 
-# system: the target harmonyOS
+# Use harmonyOS to run the HarmonyOS device/app stack.
 system: harmonyOS
 
 # device: <device serial>
 # output_dir: <output path>
 # app_path: target .hap file
 # count: <number of events to input>
+# policy: dfs_greedy
+# save_log: true
+# debug_mode: true
