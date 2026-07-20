@@ -129,6 +129,25 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **Choose an input policy**
+
+    HMDroidbot uses `dfs_greedy` by default. The available DFS/BFS policies are `dfs_greedy`, `dfs_naive`, `bfs_greedy`, and `bfs_naive`; run `droidbot -h` for the complete policy list.
+
+    Use the dedicated random policy from the command line:
+    ```bash
+    droidbot -a app/sample.hap -o output -is_harmonyos -policy random -count 1000
+    ```
+
+    Or select it in `config.yml`:
+    ```yaml
+    policy: random
+    count: 1000
+    ```
+
+    The random policy chooses from the current UI state's possible inputs plus a Back event. It relaunches the app if the app leaves the foreground, so it requires working UI hierarchy capture. As with the other automated policies, the first event stops the app to begin from a clean state, and this event counts toward `-count`.
+
+    `-random` is not an alias for `-policy random`. For DFS/BFS policies, `-random` shuffles candidate views, events, and reachable paths while retaining the selected search strategy.
+
     **vscode `launch.json` example**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
