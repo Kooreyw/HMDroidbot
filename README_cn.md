@@ -127,6 +127,25 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **选择输入策略**
+
+    HMDroidbot 默认使用 `dfs_greedy`。可用的 DFS/BFS 策略包括 `dfs_greedy`、`dfs_naive`、`bfs_greedy` 和 `bfs_naive`；完整策略列表请运行 `droidbot -h` 查看。
+
+    可以通过命令行使用独立的随机策略：
+    ```bash
+    droidbot -a app/sample.hap -o output -is_harmonyos -policy random -count 1000
+    ```
+
+    也可以在 `config.yml` 中选择：
+    ```yaml
+    policy: random
+    count: 1000
+    ```
+
+    随机策略会从当前 UI 状态可执行的输入事件以及 Back 事件中随机选择。如果应用离开前台，该策略会重新启动应用，因此需要 UI 层级采集正常工作。与其他自动策略相同，第一个事件会先停止应用，以便从干净状态开始；该事件也计入 `-count`。
+
+    `-random` 并不是 `-policy random` 的别名。对于 DFS/BFS 策略，`-random` 会打乱候选视图、事件和可达路径的顺序，但仍保留所选的搜索策略。
+
     **vscode `launch.json` 文件示例**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
