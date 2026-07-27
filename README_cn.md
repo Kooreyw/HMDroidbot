@@ -92,7 +92,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
     device: 23E**********1843
     output_dir: output
-    apk_path: <absolute_path_to_hap>
+    app_path: <absolute_path_to_hap>
     count: 1000
     ```
 
@@ -126,6 +126,19 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     # 在HMDroidbot目录中执行以下命令。
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
+
+5. **自定义输入脚本（`-script`）**
+
+    使用 JSON 格式的 DroidBotScript，在登录页、欢迎页等确定性界面注入事件，同时仍由 UTG 策略探索其余界面。
+
+    ```bash
+    python3 -m droidbot.start \
+      -a app/sample.hap -o output -is_harmonyos \
+      -script script_samples/pass_login_script.json \
+      -policy dfs_greedy -count 200
+    ```
+
+    也可在 `config.yml` 中设置 `script_path`。脚本会挂到 UTG 基类策略（`dfs_*`、`bfs_*`、`random`、`manual` 等）；当前状态匹配时优先执行脚本，否则回退到正常探索。示例见 `script_samples/`。完整语法、事件类型与常见问题：[docs/custom-input-scripts.md](docs/custom-input-scripts.md)。
 
     **vscode `launch.json` 文件示例**
 
