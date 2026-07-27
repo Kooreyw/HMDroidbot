@@ -129,6 +129,19 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+5. **Custom input scripts (`-script`)**
+
+    Use a JSON DroidBotScript to handle login walls, welcome carousels, and other deterministic UI gates while a UTG-based policy explores the rest of the app.
+
+    ```bash
+    python3 -m droidbot.start \
+      -a app/sample.hap -o output -is_harmonyos \
+      -script script_samples/pass_login_script.json \
+      -policy dfs_greedy -count 200
+    ```
+
+    Or set `script_path` in `config.yml`. Scripts attach to UTG-based policies (`dfs_*`, `bfs_*`, `random`, `manual`, …) and take priority when the current state matches; unmatched states fall through to normal exploration. Samples live in `script_samples/`. Full grammar, event types, and pitfalls: [docs/custom-input-scripts.md](docs/custom-input-scripts.md).
+
     **vscode `launch.json` example**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
