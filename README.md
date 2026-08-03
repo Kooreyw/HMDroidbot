@@ -129,6 +129,24 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **Replay a previous run**
+
+    After a run writes `events/event_*.json` under its output directory, you can replay those events with `-policy replay` and `-replay_output <prior_output>`. `-replay_output` alone does not change the policy.
+
+    ```bash
+    python3 -m droidbot.start -a app/sample.hap -o replay_out -is_harmonyos \
+      -policy replay -replay_output output -count 50
+    ```
+
+    Or in `config.yml`:
+
+    ```yaml
+    policy: replay
+    replay_output: output
+    ```
+
+    Replay matches each recorded event's `start_state` against the live UI `state_str`, so UI drift can stop progress. See [docs/event-replay.md](docs/event-replay.md) for the event JSON contract, skipped bootstrap events, and HarmonyOS pitfalls.
+
     **vscode `launch.json` example**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
