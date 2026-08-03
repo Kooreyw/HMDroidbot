@@ -127,6 +127,24 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **回放上一次运行**
+
+    当某次运行在输出目录写入 `events/event_*.json` 后，可用 `-policy replay` 与 `-replay_output <prior_output>` 回放这些事件。仅设置 `-replay_output` 不会切换策略。
+
+    ```bash
+    python3 -m droidbot.start -a app/sample.hap -o replay_out -is_harmonyos \
+      -policy replay -replay_output output -count 50
+    ```
+
+    或在 `config.yml` 中配置：
+
+    ```yaml
+    policy: replay
+    replay_output: output
+    ```
+
+    回放会将每条记录事件的 `start_state` 与当前 UI 的 `state_str` 精确匹配，因此界面变化可能导致回放卡住。事件 JSON 约定、跳过的引导事件以及 HarmonyOS 注意事项见 [docs/event-replay.md](docs/event-replay.md)。
+
     **vscode `launch.json` 文件示例**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
