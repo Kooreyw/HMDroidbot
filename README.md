@@ -129,6 +129,12 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **Coverage report (UTG)**
+
+    After a HarmonyOS run with `-o` / `output_dir`, open `output/index.html`. The sidebar shows ability coverage (`reached abilities / HAP or bm-dump ability count`) and `# Reached pages` (unique `pagePath` values from the UI dump). This is UI exploration coverage, not instrumented code coverage.
+
+    The graph is rewritten after each event that changes `state_str`. Default DFS/BFS/`random`/`manual` policies update it; `-policy replay` does not. See [docs/utg-and-coverage.md](docs/utg-and-coverage.md) for the output layout, how ability vs page metrics are counted, and report pitfalls (including HarmonyOS "Cluster activities").
+
     **vscode `launch.json` example**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">

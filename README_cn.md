@@ -127,6 +127,12 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
     ```
 
+    **覆盖率报告（UTG）**
+
+    HarmonyOS 运行只要设置了 `-o` / `output_dir`，即可打开 `output/index.html`。侧边栏中的 Ability_coverage 为「到达的 ability 数 / HAP 或 `bm dump` 中的 ability 总数」，`# Reached pages` 为 UI 转储里不同 `pagePath` 的个数。这是界面探索覆盖率，不是插桩后的代码覆盖率。
+
+    每当事件改变 `state_str`，图就会被重写。默认的 DFS/BFS/`random`/`manual` 策略会更新图；`-policy replay` 不会。输出目录结构、ability/page 计数方式以及报告注意事项（含 HarmonyOS 下「Cluster activities」）见 [docs/utg-and-coverage.md](docs/utg-and-coverage.md)。
+
     **vscode `launch.json` 文件示例**
 
    <img width="1134" alt="image" src="https://github.com/user-attachments/assets/bffde3f3-deea-41fb-9087-fb7eb3772bd5">
