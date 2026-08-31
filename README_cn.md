@@ -24,7 +24,7 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
 
 1. **确保您拥有：**
 
-    + 要分析的应用程序的 `.hap` 文件路径。
+    + 要分析的应用程序的 `.hap` 文件路径，**或**设备上已安装应用的 bundle 名。使用 bundle 名时不会安装 HAP，且**测试结束时默认卸载该应用**，除非传入 `-keep_app`。详见 [docs/harmonyos-installed-app.md](docs/harmonyos-installed-app.md)。
 
     我们提供了一些[用于测试的示例hap](https://github.com/XixianLiang/HarmonyOS_NEXT_apps)。
 
@@ -125,6 +125,14 @@ HMDroidbot（HM代表HarmonyOS，Droid代表Android）是一个轻量级的测�
     # 通过运行模块启动。易于调试！
     # 在HMDroidbot目录中执行以下命令。
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    ```
+
+    **针对已安装的 HarmonyOS 应用（bundle 名）**
+
+    若 `-a` / YAML `app_path` 不以 `.hap` 结尾，HMDroidbot 会将其视为 bundle 名，并通过 `hdc shell bm dump` 读取元数据。应用必须已经安装；请加上 `-keep_app`（或 YAML `keep_app: true`），否则结束时会卸载该应用。若设备上已有同名 bundle，即使传入更新的 HAP 也不会重新安装（`hdc install -r` 仅在 `bm dump -a` 未列出该包时执行）。详见 [docs/harmonyos-installed-app.md](docs/harmonyos-installed-app.md)。
+
+    ```bash
+    python -m droidbot.start -a com.example.myapp -o output -is_harmonyos -keep_app -count 1000
     ```
 
     **vscode `launch.json` 文件示例**
