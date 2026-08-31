@@ -27,7 +27,7 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
 
 1. **Make sure you have:**
 
-    + `.hap` file path of the app you want to analyze.
+    + A `.hap` file path of the app you want to analyze, **or** the bundle name of an app already installed on the device. Bundle-name targeting skips HAP install and **uninstalls the app when the run ends** unless you pass `-keep_app`. See [docs/harmonyos-installed-app.md](docs/harmonyos-installed-app.md).
 
     We provided some sample hap for testing [here](https://github.com/XixianLiang/HarmonyOS_NEXT_apps).
 
@@ -127,6 +127,14 @@ It can send random or scripted input events to test an HarmonyOS app, achieve hi
     # Start by running module. Easy to debug!
     # execute the following command in the HMDroidbot dir, which should include the setup.py.
     python -m droidbot.start -a app/sample.hap -o output -t 23E**********1843 -count 1000 -is_harmonyos -debug
+    ```
+
+    **Already-installed HarmonyOS app (bundle name)**
+
+    If `-a` / YAML `app_path` does not end with `.hap`, HMDroidbot treats it as a bundle name and reads metadata with `hdc shell bm dump`. The app must already be installed; pass `-keep_app` (or YAML `keep_app: true`) so the run does not uninstall it. An existing bundle is never reinstalled from a newer HAP (`hdc install -r` only runs when `bm dump -a` does not list the package). Details: [docs/harmonyos-installed-app.md](docs/harmonyos-installed-app.md).
+
+    ```bash
+    python -m droidbot.start -a com.example.myapp -o output -is_harmonyos -keep_app -count 1000
     ```
 
     **vscode `launch.json` example**
